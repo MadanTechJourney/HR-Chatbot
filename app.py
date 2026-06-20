@@ -78,7 +78,7 @@ st.markdown("""
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 CORPUS_PATH   = "hr_docs/"        # folder containing all 11 PDFs
-LLM_MODEL = "llama-3.1-8b-instant" # Groq model
+LLM_MODEL = "llama-3.3-70b-versatile" # Groq model
 CHUNK_SIZE    = 800
 CHUNK_OVERLAP = 150
 TOP_K         = 5
@@ -176,7 +176,18 @@ def ask_bot(question: str, retriever, llm) -> dict:
     """Full chatbot pipeline with guardrails."""
     # Step 1: Classify question
     clf_prompt   = OOS_PROMPT.invoke({"question": question})
-    clf_response = StrOutputParser().invoke(llm.invoke(clf_prompt)).strip().upper()
+    try:
+    response = llm.invoke(clf_prompt)
+
+    if hasattr(response, "content"):
+        clf_response = response.content.strip().upper()
+    else:
+        clf_response = str(response).strip().upper()
+
+except Exception as e:
+    st.error(f"Groq Error: {e}")
+    raise
+
 
     if "OUT_OF_SCOPE" in clf_response:
         return {
